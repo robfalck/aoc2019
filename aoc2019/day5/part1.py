@@ -1,4 +1,4 @@
-from intcode_computer import IntCodeComputer
+from aoc2019.intcode_computer import IntCodeComputer
 
 def part1():
     comp = IntCodeComputer()
