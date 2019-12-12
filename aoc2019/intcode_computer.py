@@ -2,12 +2,24 @@ import sys
 
 
 class IntCodeComputer(object):
+    """
+    The IntCode Computer for AoC2019.
 
-    def __init__(self):
+    Parameters
+    ----------
+    stdio : bool
+        If True, interact with this computer through stdin/stdout. Otherwise, programmatically
+        interact with this computer through set_input and get_output
+    """
+
+    def __init__(self, stdio=True, input_queue=None, output_queue=None):
         self._input_count = 0
         self._phase_setting = None
         self._input_signal = None
         self._output_value = None
+        self._use_stdio = stdio
+        self._output_queue = input_queue
+        self._input_queue = output_queue
 
     def _add(self, pos, tokens, modes=None):
 
@@ -60,7 +72,12 @@ class IntCodeComputer(object):
 
     def _store(self, pos, tokens, modes=None):
         output_address = tokens[pos + 1]
-        tokens[output_address] = int(input('enter input'))
+
+        if self._use_stdio:
+            tokens[output_address] = int(input('enter input'))
+        else:
+            tokens[output_address] = int(self._input_queue.get())
+
         self._input_count += 1
 
         new_pos = pos + 2 if output_address != pos else pos
@@ -71,11 +88,15 @@ class IntCodeComputer(object):
 
     def _output(self, pos, tokens, modes=None):
         if modes[0] == 0:
-            print(tokens[tokens[pos + 1]])
+            if self._use_stdio:
+                print(tokens[tokens[pos + 1]])
             self._output_value = int(tokens[tokens[pos + 1]])
+            self._output_queue.put(int(tokens[tokens[pos + 1]]))
         elif modes[0] == 1:
-            print(tokens[pos + 1])
+            if self._use_stdio:
+                print(tokens[pos + 1])
             self._output_value = tokens[pos + 1]
+            self._output_queue.put(tokens[pos + 1])
         else:
             raise ValueError('unknown mode in output', modes[0])
         return pos + 2, tokens
@@ -177,8 +198,6 @@ class IntCodeComputer(object):
         modes = str(instruction)[:-2][::-1]
         modes = [int(modes[k]) if len(modes) > k else 0 for k in range(4)]
 
-        # print(instruction, opcode, modes)
-
         if opcode == 1:
             pos, tokens = self._add(pos, tokens, modes=modes)
         elif opcode == 2:
@@ -201,7 +220,17 @@ class IntCodeComputer(object):
             raise ValueError('unrecognized code', tokens[pos])
         return pos, tokens, halt
 
-    def run_program(self, inp, mem=1000):
+    def set_input(self, inp):
+        self._input_queue.put(inp)
+
+    def get_output(self):
+        self._output_queue.get()
+
+    def run_program(self, inp, mem=1000, input_queue=None, output_queue=None):
+        if input_queue:
+            self._input_queue = input_queue
+        if output_queue:
+            self._output_queue = output_queue
         self._input_count = 0
         self._output_value = None
         tokens = [int(s) for s in inp.split(',')]
@@ -216,5 +245,4 @@ class IntCodeComputer(object):
 
 if __name__ == '__main__':
     comp = IntCodeComputer()
-    print(sys.argv[1])
     comp.run_program(sys.argv[1])

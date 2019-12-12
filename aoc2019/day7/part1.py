@@ -1,16 +1,41 @@
 from itertools import permutations
 from aoc2019.day7.intcode_computer import IntCodeComputer
-import pexpect
+import subprocess
 
 
 comp = IntCodeComputer()
+
+def execute(program, phase_setting, power_level):
+    proc = subprocess.Popen(['python', '../intcode_computer.py', program],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+
+
+    # print(proc.stdout.readline())
+    proc.stdin.write(f'{phase_setting}\n'.encode())
+    proc.stdin.flush()
+    # print(proc.stdout.readline())
+    proc.stdin.write(f'{power_level}\n'.encode())
+    proc.stdin.flush()
+    proc.stdin.flush()
+    output = str(proc.stdout.readline()).strip()
+    loc = output.rfind('t')
+    print(output)
+    print(loc)
+    output = output[loc+1:]
+    print(output)
+    proc.stdin.close()
+    proc.terminate()
+    proc.wait(timeout=0.2)
+    exit(0)
+
 
 def run_sequence(seq, program):
     input_signal = 0
 
     for phase_setting in seq:
-        comp.run_program(program, phase_setting=phase_setting, input_signal=input_signal)
-        input_signal = comp._output_value
+        execute(program, phase_setting, power_level=0)
     return input_signal
 
 def part1(inp):
