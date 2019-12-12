@@ -13,7 +13,7 @@ def part2(program):
 
     p = mp.Process(target=comp.run_program, args=(program,), kwargs={'mem': 10000,
                                                                      'input_queue': input_queue,
-                                                                     'output_queue': output_queue})
+                                                                     'output_queues': [output_queue]})
 
     p.start()
     input_queue.put(5)

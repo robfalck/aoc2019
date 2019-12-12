@@ -12,7 +12,7 @@ def run_sequence(seq, program):
         comp = IntCodeComputer(stdio=False)
         p = mp.Process(target=comp.run_program, args=(program,), kwargs={'mem': 10000,
                                                                          'input_queue': input_queue,
-                                                                         'output_queue': output_queue})
+                                                                         'output_queues': [output_queue]})
 
         p.start()
         input_queue.put(phase_setting)
@@ -24,7 +24,7 @@ def run_sequence(seq, program):
 def part1(inp):
     sequences = permutations(range(5))
     best_output = 0
-    best_sequene = None
+    best_sequence = None
     for s in sequences:
         output_signal = run_sequence(s, inp)
         if output_signal > best_output:

@@ -12,14 +12,15 @@ class IntCodeComputer(object):
         interact with this computer through set_input and get_output
     """
 
-    def __init__(self, stdio=True, input_queue=None, output_queue=None):
+    def __init__(self, name='a', stdio=True, input_queue=None, output_queues=None):
+        self._name = name
         self._input_count = 0
         self._phase_setting = None
         self._input_signal = None
         self._output_value = None
         self._use_stdio = stdio
-        self._output_queue = input_queue
-        self._input_queue = output_queue
+        self._output_queues = [] if output_queues is None else output_queues
+        self._input_queue = input_queue
 
     def _add(self, pos, tokens, modes=None):
 
@@ -89,14 +90,16 @@ class IntCodeComputer(object):
     def _output(self, pos, tokens, modes=None):
         if modes[0] == 0:
             if self._use_stdio:
-                print(tokens[tokens[pos + 1]])
+                print(self._name, tokens[tokens[pos + 1]])
             self._output_value = int(tokens[tokens[pos + 1]])
-            self._output_queue.put(int(tokens[tokens[pos + 1]]))
+            for q in self._output_queues:
+                q.put(int(tokens[tokens[pos + 1]]))
         elif modes[0] == 1:
             if self._use_stdio:
-                print(tokens[pos + 1])
+                print(self.name, tokens[pos + 1])
             self._output_value = tokens[pos + 1]
-            self._output_queue.put(tokens[pos + 1])
+            for q in self._output_queues:
+                q.put(tokens[pos + 1])
         else:
             raise ValueError('unknown mode in output', modes[0])
         return pos + 2, tokens
@@ -226,11 +229,9 @@ class IntCodeComputer(object):
     def get_output(self):
         self._output_queue.get()
 
-    def run_program(self, inp, mem=1000, input_queue=None, output_queue=None):
-        if input_queue:
-            self._input_queue = input_queue
-        if output_queue:
-            self._output_queue = output_queue
+    def run_program(self, inp, mem=1000, input_queue=None, output_queues=None):
+        self._input_queue = input_queue
+        self._output_queues = [] if output_queues is None else output_queues
         self._input_count = 0
         self._output_value = None
         tokens = [int(s) for s in inp.split(',')]
