@@ -45,6 +45,7 @@ def part2(program):
         d_iq.put(seq[3])
         e_iq.put(seq[4])
 
+        # Set the initial signal for the first thruster
         a_iq.put(0)
 
         # Start the processes

@@ -26,6 +26,4 @@ if __name__ == '__main__':
 
     with open('input.txt') as f:
         program = f.read()
-    # program = '3,9,8,9,10,9,4,9,99,-1,8'
-
     part2(program)

@@ -12,7 +12,7 @@ class IntCodeComputer(object):
         interact with this computer through set_input and get_output
     """
 
-    def __init__(self, name='a', stdio=True, input_queue=None, output_queues=None):
+    def __init__(self, name='a', stdio=True, input_queue=None, output_queues=None, relative_base=0):
         self._name = name
         self._input_count = 0
         self._phase_setting = None
@@ -21,176 +21,113 @@ class IntCodeComputer(object):
         self._use_stdio = stdio
         self._output_queues = [] if output_queues is None else output_queues
         self._input_queue = input_queue
+        self._relative_base = relative_base
+
+    def _get_parameter_address(self, idx, pos, tokens, modes=None):
+        _modes = [0, 0, 0] if modes is None else modes
+        if _modes[idx] == 0:
+            address = tokens[pos + 1 + idx]
+        elif _modes[idx] == 1:
+            address = pos + 1 + idx
+        else:
+            address = self._relative_base + pos + 1 + idx
+        return address
 
     def _add(self, pos, tokens, modes=None):
+        a = self._get_parameter_address(0, pos, tokens, modes)
+        b = self._get_parameter_address(1, pos, tokens, modes)
+        output_address = self._get_parameter_address(2, pos, tokens, modes)
 
-        _modes = [0, 0, 0] if modes is None else modes
-
-        if _modes[0] == 0:
-            a = tokens[tokens[pos + 1]]
-        else:
-            a = tokens[pos + 1]
-
-        if _modes[1] == 0:
-            b = tokens[tokens[pos + 2]]
-        else:
-            b = tokens[pos + 2]
-
-        if _modes[2] == 0:
-            output_address = tokens[pos + 3]
-        else:
-            raise ValueError('Output address in parameter mode!')
-
-        tokens[output_address] = a + b
+        tokens[output_address] = tokens[a] + tokens[b]
 
         new_pos = pos + 4 if output_address != pos else pos
 
         return new_pos, tokens
 
     def _mul(self, pos, tokens, modes=None):
-        _modes = [0, 0, 0] if modes is None else modes
+        a = self._get_parameter_address(0, pos, tokens, modes)
+        b = self._get_parameter_address(1, pos, tokens, modes)
+        output_address = self._get_parameter_address(2, pos, tokens, modes)
 
-        if _modes[0] == 0:
-            a = tokens[tokens[pos + 1]]
-        else:
-            a = tokens[pos + 1]
-
-        if _modes[1] == 0:
-            b = tokens[tokens[pos + 2]]
-        else:
-            b = tokens[pos + 2]
-
-        if _modes[2] == 0:
-            output_address = tokens[pos + 3]
-        else:
-            raise ValueError('Output address in parameter mode!')
-
-        tokens[output_address] = a * b
+        tokens[output_address] = tokens[a] * tokens[b]
 
         new_pos = pos + 4 if output_address != pos else pos
 
         return new_pos, tokens
 
     def _store(self, pos, tokens, modes=None):
-        output_address = tokens[pos + 1]
+        output_address = self._get_parameter_address(0, pos, tokens, modes)
 
         if self._use_stdio:
             tokens[output_address] = int(input('enter input'))
         else:
             tokens[output_address] = int(self._input_queue.get())
 
-        self._input_count += 1
-
         new_pos = pos + 2 if output_address != pos else pos
 
         return new_pos, tokens
 
-        return pos + 2, tokens
-
     def _output(self, pos, tokens, modes=None):
-        if modes[0] == 0:
-            if self._use_stdio:
-                print(self._name, tokens[tokens[pos + 1]])
-            self._output_value = int(tokens[tokens[pos + 1]])
-            for q in self._output_queues:
-                q.put(int(tokens[tokens[pos + 1]]))
-        elif modes[0] == 1:
-            if self._use_stdio:
-                print(self.name, tokens[pos + 1])
-            self._output_value = tokens[pos + 1]
-            for q in self._output_queues:
-                q.put(tokens[pos + 1])
-        else:
-            raise ValueError('unknown mode in output', modes[0])
+        address = self._get_parameter_address(0, pos, tokens, modes)
+
+        if self._use_stdio:
+            print(tokens[address])
+
+        for q in self._output_queues:
+            q.put(tokens[address])
+
         return pos + 2, tokens
 
     def _jump_if_true(self, pos, tokens, modes=None):
-        _modes = [0, 0, 0] if modes is None else modes
+        a = self._get_parameter_address(0, pos, tokens, modes)
+        b = self._get_parameter_address(1, pos, tokens, modes)
 
-        if _modes[0] == 0:
-            a = tokens[tokens[pos + 1]]
-        else:
-            a = tokens[pos + 1]
-
-        if _modes[1] == 0:
-            b = tokens[tokens[pos + 2]]
-        else:
-            b = tokens[pos + 2]
-
-        if a != 0:
-            new_pos = b
+        if tokens[a] != 0:
+            new_pos = tokens[b]
         else:
             new_pos = pos + 3
 
         return new_pos, tokens
 
     def _jump_if_false(self, pos, tokens, modes=None):
-        _modes = [0, 0, 0] if modes is None else modes
+        a = self._get_parameter_address(0, pos, tokens, modes)
+        b = self._get_parameter_address(1, pos, tokens, modes)
 
-        if _modes[0] == 0:
-            a = tokens[tokens[pos + 1]]
-        else:
-            a = tokens[pos + 1]
-
-        if _modes[1] == 0:
-            b = tokens[tokens[pos + 2]]
-        else:
-            b = tokens[pos + 2]
-
-        if a == 0:
-            new_pos = b
+        if tokens[a] == 0:
+            new_pos = tokens[b]
         else:
             new_pos = pos + 3
 
         return new_pos, tokens
 
     def _less_than(self, pos, tokens, modes=None):
-        _modes = [0, 0, 0] if modes is None else modes
+        a = self._get_parameter_address(0, pos, tokens, modes)
+        b = self._get_parameter_address(1, pos, tokens, modes)
+        output_address = self._get_parameter_address(2, pos, tokens, modes)
 
-        if _modes[0] == 0:
-            a = tokens[tokens[pos + 1]]
-        else:
-            a = tokens[pos + 1]
-
-        if _modes[1] == 0:
-            b = tokens[tokens[pos + 2]]
-        else:
-            b = tokens[pos + 2]
-
-        if _modes[2] == 0:
-            output_address = tokens[pos + 3]
-        else:
-            raise ValueError('Output address in parameter mode!')
-
-        tokens[output_address] = 1 if a < b else 0
+        tokens[output_address] = 1 if tokens[a] < tokens[b] else 0
 
         new_pos = pos + 4 if output_address != pos else pos
 
         return new_pos, tokens
 
     def _equals(self, pos, tokens, modes=None):
-        _modes = [0, 0, 0] if modes is None else modes
+        a = self._get_parameter_address(0, pos, tokens, modes)
+        b = self._get_parameter_address(1, pos, tokens, modes)
+        output_address = self._get_parameter_address(2, pos, tokens, modes)
 
-        if _modes[0] == 0:
-            a = tokens[tokens[pos + 1]]
-        else:
-            a = tokens[pos + 1]
-
-        if _modes[1] == 0:
-            b = tokens[tokens[pos + 2]]
-        else:
-            b = tokens[pos + 2]
-
-        if _modes[2] == 0:
-            output_address = tokens[pos + 3]
-        else:
-            raise ValueError('Output address in parameter mode!')
-
-        tokens[output_address] = 1 if a == b else 0
+        tokens[output_address] = 1 if tokens[a] == tokens[b] else 0
 
         new_pos = pos + 4 if output_address != pos else pos
 
         return new_pos, tokens
+
+    def _adjust_relative_base(self, pos, tokens, modes=None):
+        a = self._get_parameter_address(0, pos, tokens, modes)
+
+        self._relative_base = tokens[a]
+
+        return pos + 2, tokens
 
     def _process_instruction(self, pos, tokens):
         halt = False
@@ -217,10 +154,12 @@ class IntCodeComputer(object):
             pos, tokens = self._less_than(pos, tokens, modes=modes)
         elif opcode == 8:
             pos, tokens = self._equals(pos, tokens, modes=modes)
+        elif opcode == 9:
+            pos, tokens = self._adjust_relative_base(pos, tokens, modes=modes)
         elif opcode == 99:
             halt = True
         else:
-            raise ValueError('unrecognized code', tokens[pos])
+            raise ValueError('unrecognized code', tokens[pos], tokens, pos)
         return pos, tokens, halt
 
     def set_input(self, inp):
