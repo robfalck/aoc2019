@@ -2,9 +2,6 @@ from aoc2019.intcode_computer import IntCodeComputer
 import multiprocessing as mp
 
 
-def part1():
-    pass
-
 if __name__ == '__main__':
     iq = mp.Queue()
     oq = mp.Queue()
@@ -20,7 +17,7 @@ if __name__ == '__main__':
     comp.run_program(program, mem=10000)
 
     # 3989758265: right answer!
-    
+
     # p.start()
     # # iq.put(1)
     # p.join()

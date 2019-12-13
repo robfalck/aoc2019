@@ -30,7 +30,7 @@ class IntCodeComputer(object):
         elif _modes[idx] == 1:
             address = pos + 1 + idx
         else:
-            address = self._relative_base + pos + 1 + idx
+            address = self._relative_base + tokens[pos + 1 + idx]
         return address
 
     def _add(self, pos, tokens, modes=None):
@@ -125,7 +125,7 @@ class IntCodeComputer(object):
     def _adjust_relative_base(self, pos, tokens, modes=None):
         a = self._get_parameter_address(0, pos, tokens, modes)
 
-        self._relative_base = tokens[a]
+        self._relative_base += tokens[a]
 
         return pos + 2, tokens
 
@@ -137,6 +137,8 @@ class IntCodeComputer(object):
         opcode = int(str(instruction)[-2:])
         modes = str(instruction)[:-2][::-1]
         modes = [int(modes[k]) if len(modes) > k else 0 for k in range(4)]
+
+        rb = self._relative_base
 
         if opcode == 1:
             pos, tokens = self._add(pos, tokens, modes=modes)
