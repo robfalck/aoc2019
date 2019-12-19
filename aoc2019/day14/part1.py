@@ -27,7 +27,7 @@ def parse_input(inp):
 
 def make_product(product, quantity, tree):
 
-    print('making', quantity, product)
+    # print('making', quantity, product)
 
     if product == 'ORE':
         tree.nodes[product]['quantity'] += quantity
